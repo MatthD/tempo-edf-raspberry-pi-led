@@ -18,11 +18,13 @@ enum TarifColor {
 // Fetch and set RGB color of the day
 const job = new CronJob("5 6,22 * * *", main);
 
-await main();
-job.start();
+main().then(()=>{
+  job.start();
+});
 
 async function main() {
   const color = await fetchEDFColorOfTheDay();
+  console.log('So today we are in %s color', color);
   if (color) {
     const red = color === TarifColor.Red || color === TarifColor.White ? 1 : 0; // Assuming colors are returned with properties 'red', 'green' and 'blue'
     const green = color === TarifColor.White ? 1 : 0;
@@ -36,12 +38,17 @@ async function main() {
 
 // Function to set RGB color
 function setRGBColor(red: BinaryValue, green: BinaryValue, blue: BinaryValue) {
-  const redPin = new Gpio(process.env.RED_PIN_NB, "out");
-  const greenPin = new Gpio(process.env.GREEN_PIN_NB, "out");
-  const bluePin = new Gpio(process.env.BLUE_PIN_NB, "out");
+  const redPin = new Gpio(process.env.RED_PIN_NB as unknown as number, "out");
+  const greenPin = new Gpio(process.env.GREEN_PIN_NB as unknown as number, "out");
+  const bluePin = new Gpio(process.env.BLUE_PIN_NB as unknown as number, "out");
   redPin.writeSync(red);
   greenPin.writeSync(green);
   bluePin.writeSync(blue);
+  process.on('SIGINT', _ => {
+    redPin.unexport();
+    greenPin.unexport();
+    bluePin.unexport();
+  });
 }
 
 // Function to get EDF color of the day (You'll need to replace this with your actual API endpoint)
